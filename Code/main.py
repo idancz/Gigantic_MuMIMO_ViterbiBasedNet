@@ -34,7 +34,7 @@ HYPERPARAMS_DICT = {
 
 if __name__ == '__main__':
     # main flags
-    run_over = 2  # 0 - load plots from previous runs if exists / 1 - load trained weights and start online evaluation / 2 - clear all and start training  from scratch
+    run_over = 0  # 0 - load plots from previous runs if exists / 1 - load trained weights and start online evaluation / 2 - clear all and start training  from scratch
     plot_by_block = False  # False / True either plot by SNR or by block index
     block_length = 120     # determine the transmission length
     channel_coefficients = 'cost2100'  # 'time_decay' / 'cost2100'
