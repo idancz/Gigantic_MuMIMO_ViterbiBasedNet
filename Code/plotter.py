@@ -5,9 +5,14 @@ import os
 from typing import List, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import pickle as pkl
 import math
 import matplotlib as mpl
+
+pd.set_option('display.max_rows', 50)
+pd.set_option('display.max_columns', 100)
+pd.set_option('display.width', 1000)
 
 mpl.rcParams['xtick.labelsize'] = 24
 mpl.rcParams['ytick.labelsize'] = 24
@@ -89,6 +94,28 @@ def get_ser_data(trainer: Trainer, run_over: bool, method_name: str):
         save_pkl(plots_path, ser_total)
     print(np.mean(ser_total))
     return ser_total
+
+
+def plot_summary_table(all_curves: List[Tuple[np.ndarray, np.ndarray, str]], models_list: list, snr_values: list):
+    df = pd.DataFrame(all_curves, columns=['BER', 'NET', 'InfoBits', 'Modulation'])
+    results = np.zeros((len(snr_values), len(models_list)))
+    i, j = 0, 0
+    for snr in snr_values:
+        j = 0
+        for model in models_list:
+            model_ber = df[df.NET == model]
+            model_ber.index = snr_values
+            results[i, j] = model_ber[['BER']].loc[snr].mean(axis=0, skipna=True).mean()
+            j += 1
+        i += 1
+    res = pd.DataFrame(results, columns=models_list)
+    res.index = snr_values
+    res.index.name = 'SNR'
+    title = '##############################> - SNR  Summary Table - <##############################'
+    print("______________________________________________________________________________________")
+    print(title)
+    print("______________________________________________________________________________________")
+    print(res)
 
 
 def plot_ser_by_block_index(all_curves: List[Tuple[np.ndarray, np.ndarray, str]], val_block_length: int,

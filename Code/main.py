@@ -1,6 +1,7 @@
 from Code.dir_definitions import *
-from Code.plotter import get_ser_data, plot_ser_by_block_index, plot_ser_by_snr
+from Code.plotter import get_ser_data, plot_ser_by_block_index, plot_ser_by_snr, plot_summary_table
 from Code.trainer import Trainer
+
 
 
 def execute_and_plot(model_name, detector_method, self_supervised, all_curves, current_params, run_over):
@@ -42,7 +43,7 @@ if __name__ == '__main__':
     snr_start, snr_end = 7, 15
 
     # deep learning models list 'ADNN', 'Sionna', 'SionnaPlus', 'Transformer', 'LSTM', 'ViterbiNet'
-    models_list = ['ADNN', 'Sionna', 'SionnaPlus', 'Transformer', 'LSTM', 'ViterbiNet']
+    models_list = ['ADNN', 'Sionna', 'SionnaPlus', 'Transformer', 'LSTM', 'ViterbiNet', 'ClassicViterbi']
     detector_method = 'ModelBased'  # ModelBased / EndToEnd / Statistical
     self_supervised = True  # True / False for online evaluation enablement
 
@@ -62,9 +63,10 @@ if __name__ == '__main__':
                          str(HYPERPARAMS_DICT['val_block_length']) + '_' + str(HYPERPARAMS_DICT['n_symbols'])
 
         for model in models_list:
-            execute_and_plot(model, detector_method, self_supervised, all_curves, current_params, run_over)
-
-        execute_and_plot('ClassicViterbi', 'Statistical', False, all_curves, current_params, run_over)  # Classic Viterbi Alg with Perfect-CSI
+            if model == 'ClassicViterbi':
+                execute_and_plot(model, 'Statistical', False, all_curves, current_params, run_over)  # Classic Viterbi Alg with Perfect-CSI
+            else:
+                execute_and_plot(model, detector_method, self_supervised, all_curves, current_params, run_over)
 
         if plot_by_block:
             plot_ser_by_block_index(all_curves, block_length, n_symbol, snr)
@@ -73,6 +75,6 @@ if __name__ == '__main__':
     if not plot_by_block:
         plot_ser_by_snr(all_curves, snr_values)
 
-
+    plot_summary_table(all_curves, models_list, snr_values)
 
 
