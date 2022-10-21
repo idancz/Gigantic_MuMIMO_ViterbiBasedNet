@@ -3,8 +3,8 @@ import sys
 # main folders
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))  # This is your Project Root
 CODE_DIR = os.path.join(ROOT_DIR, '')
-RESOURCES_DIR = os.path.join(ROOT_DIR, '..\Resources')
-RESULTS_DIR = os.path.join(ROOT_DIR, '..\Results')
+RESOURCES_DIR = os.path.join(ROOT_DIR, '../Resources')
+RESULTS_DIR = os.path.join(ROOT_DIR, '../Results')
 # subfolders
 FIGURES_DIR = os.path.join(RESULTS_DIR, 'figures')
 WEIGHTS_DIR = os.path.join(RESULTS_DIR, 'weights')
