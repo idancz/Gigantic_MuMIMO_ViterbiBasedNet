@@ -111,7 +111,7 @@ def plot_summary_table(all_curves: List[Tuple[np.ndarray, np.ndarray, str]], mod
     res = pd.DataFrame(results, columns=models_list)
     res.index = snr_values
     res.index.name = 'SNR'
-    title = '##############################> - SNR  Summary Table - <##############################'
+    title = '############################> - SER/SNR  Summary Table - <############################'
     print("______________________________________________________________________________________")
     print(title)
     print("______________________________________________________________________________________")
