@@ -1,10 +1,19 @@
 # Gigantic MU-MIMO: Toward Channel Statistics Independence in ML Receivers
 Deep Neural Networks receivers based Viterbi algorithm for Maximum Likelihood priors-learning in digital communication 
 
-## 1. Introduction   
+# Table of contents
+1. [Introduction](#introduction)
+2. [Folder Structure and files Usage](#folder)
+3. [Installing](#install)
+4. [Executing](#execute)
+5. [Benchmark Result](#result)
+------------------
+
+
+## 1. Introduction   <a name="introduction"></a>
 1.1.  In this project, we explored, extended, and implemented a Viterbi-model-based approaches and DNN architectures for learning the underlying statistics of wireless fading channel communication which obeys a Markovian stochastic input-output relationship ,based on the paper: [“ViterbiNet: A Deep Learning Based Viterbi Algorithm for Symbol Detection” by Nir Shlezinger, Nariman Farsad, Yonina C. Eldar, and Andrea J. Goldsmith](https://arxiv.org/abs/2203.14359)  
-## 2. Folder Structure and files Usage
-##### note: Files names are marked in ***`italic bold`*** font , while directories are marked in **`bold`** font with '/' suffix.
+## 2. Folder Structure and files Usage <a name="folder"></a>
+##### note: Files names are marked in ***`italic bold`*** font ,  Directories are marked in **`bold`** font with '/' suffix, parameters are marked as `cell`
 
 2.1 **`Code/`** folder - contains all code subdirectories and files implemented in python using `pytorch library`.   
 2.1.1. **`channel/`** folder - contains data generation code  
@@ -43,14 +52,15 @@ In addition, it contains `HYPERPARAMS_DICT` with configurable parameters and mai
 2.3.	**`Results/`** folder   
 2.3.1.	**`figures/`** folder – contains all the saved graphs images  
 2.3.2.	**`plots/`** folder – contains all the saved plots data  
-2.3.3.	**`weights/`** folder – contains all the trained model's weights per channel model , modulation order  ,  SNR and gamma.  
-2.4.	*`project_env.yml`* – conda environment with all related packages and modules using the   command line in 3.1
-##3.	Execution
+2.3.3.	**`weights/`** folder – contains all the trained model's weights per channel model , modulation order  ,  SNR and 
+2.4.	*`project_env.yml`* – conda environment with all related packages and modules using the command line in 3.1.  
+2.4.	*`main.ipynb`* – Juypiter notebook to be used in Google Colab.  
+2.4.	*`main_with_results.yml`* -  Juypiter notebook post execution in Google Colab.  
+## 3.	Installing <a name="install"></a>
 3.1.	In order to execute the project,  first make sure you have Anaconda and PyCharm (IDE) installed, then install the project_env.yml: 
 ```bash
 conda env create -f project_env.yml
 ```
-follow the next instructions:  
 3.1.1.	Open `PyCharm` in the project root directory
 3.1.2.	Go to, File -> Settings -> Python Interpreter -> Add  
 ![image](https://user-images.githubusercontent.com/104585352/197407096-bc1756c0-4679-46c1-9cb4-51a1994a0630.png)
@@ -63,7 +73,7 @@ follow the next instructions:
 C:\Anaconda3\envs\<env_name>\python.exe
 ```
 3.2.	Now you are ready to  run the ***`Code/main.py`*** file.  
-## 4. Run and Modify Project  
+## 4. Executing <a name="execute"></a>
 4.1. As described in  section 2 , the ***`Code/main.py`*** file executes and controls all the project aspects, therefore, most of the running, plotting, training, evaluation and data are configuration using this file. So please review  sub-sections `2.1.10` and `2.1.11`  relevant flags and parameters.  
 4.2.	**most important running configuration described there**  
 4.2.1 `run_over` flag:  
@@ -72,9 +82,10 @@ C:\Anaconda3\envs\<env_name>\python.exe
 4.2.3.3.	`run_over  = 2` - clear all results and train from scratch  
 ![image](https://user-images.githubusercontent.com/104585352/197407103-35db531c-ea69-47ad-be5f-6def6d682d52.png)
 
-## 5.	Benchmark Results
+## 5.	Benchmark Results <a name="result"></a>
 All results are based on  Model-Based `ViterbiNet` with using  `cost2100` channel model and various DNN architecture.   
 5.1.  Coded Bit-Error-Rate Vs SNR Table   
+
 |SNR     |ADNN	   |Sionna	  |SionnaPlus |Transformer|	LSTM	    |ViterbiNet	|ClassicViterbi
 |:--------|:------:|:--------:|:---------:|:---------:|:---------:|:---------:|--------------|		
 |7|0.041556|0.037167|0.034194|0.042250|0.049028|0.030667|0.022167|
