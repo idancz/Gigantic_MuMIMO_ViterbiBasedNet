@@ -75,7 +75,7 @@ METHOD_NAMES = {'ViterbiNet': 'ViterbiNet',
                 }
 
 
-def get_ser_data(trainer: Trainer, run_over: bool, method_name: str):
+def get_ser_data(trainer: Trainer, run_over: bool, num_of_rep: int, method_name: str):
     print(method_name)
     # set the path to saved plot results for a single method (so we do not need to run anew each time)
     if not os.path.exists(PLOTS_DIR):
@@ -90,7 +90,7 @@ def get_ser_data(trainer: Trainer, run_over: bool, method_name: str):
     else:
         # otherwise - run again
         print("calculating fresh")
-        ser_total = trainer.run(run_over)
+        ser_total = trainer.run(run_over, num_of_rep=num_of_rep)
         save_pkl(plots_path, ser_total)
     print(np.mean(ser_total))
     return ser_total

@@ -211,12 +211,12 @@ class Trainer(object):
                                        fading_in_decoder=self.fading_in_decoder,
                                        phase=phase) for phase in ['train', 'val']}
 
-    def run(self, run_over) -> np.ndarray:
+    def run(self, run_over, num_of_rep=1) -> np.ndarray:
         """
         Train and evaluation in a word-by-word way
         """
         self.load_train_weights(run_over)
-        return self.online_evaluation()
+        return self.online_evaluation(num_of_rep)
 
     def train(self):
         """
@@ -331,64 +331,67 @@ class Trainer(object):
         frames_acc = torch.eq(all_bits_sum_vector, torch.LongTensor(1).fill_(0).to(device=device)).float().mean().item()
         return max([1 - bits_acc, 0.0]), max([1 - frames_acc, 0.0]), torch.nonzero(all_bits_sum_vector, as_tuple=False).reshape(-1)
 
-    def online_evaluation(self) -> Union[float, np.ndarray]:
+    def online_evaluation(self, num_of_rep=10) -> Union[float, np.ndarray]:
         print(f'Start online evaluation')
         if self.self_supervised:
             self.config_optimizer()
             self.config_criterion()
         total_ser = 0
-        # draw words of given gamma for all SNRs
-        transmitted_words, received_words = self.channel_dataset['val'].__getitem__(snr_list=[self.curr_SNR], gamma=self.gamma)
+        first_run = True
+        for rep in range(0, num_of_rep):
+            # draw words of given gamma for all SNRs
+            transmitted_words, received_words = self.channel_dataset['val'].__getitem__(snr_list=[self.curr_SNR], gamma=self.gamma)
 
-        # received_words = self.get_overlapping_rx(received_words)
+            # received_words = self.get_overlapping_rx(received_words)
+            if first_run:
+                ser_by_word = np.zeros(num_of_rep*transmitted_words.shape[0])
+                # query for all detected words
+                buffer_rx = torch.empty([0, received_words.shape[1]]).to(device)
+                buffer_tx = torch.empty([0, received_words.shape[1]]).to(device)
+                buffer_ser = torch.empty([0]).to(device)
+                first_run = False
 
-        ser_by_word = np.zeros(transmitted_words.shape[0])
-        # query for all detected words
-        buffer_rx = torch.empty([0, received_words.shape[1]]).to(device)
-        buffer_tx = torch.empty([0, received_words.shape[1]]).to(device)
-        buffer_ser = torch.empty([0]).to(device)
+            for count, (transmitted_word, received_word) in enumerate(zip(transmitted_words, received_words)):
+                transmitted_word, received_word = transmitted_word.reshape(1, -1), received_word.reshape(1, -1)
+                # detect
+                # self.detector.model.eval()
+                detected_word = self.detector(received_word, 'val')
+                if count in self.data_indices:
+                    # decode
+                    decoded_word = [decode(detected_word, self.n_symbols) for detected_word in detected_word.cpu().numpy()]
+                    decoded_word = torch.Tensor(np.array(decoded_word)).to(device)
+                    # calculate accuracy
+                    ser, fer, err_indices = self.calculate_error_rates(decoded_word, transmitted_word)
+                    # encode word again
+                    decoded_word_array = decoded_word.int().cpu().numpy()
+                    encoded_word = torch.Tensor(encode(decoded_word_array, self.n_symbols).reshape(1, -1)).to(device)
+                    errors_num = torch.sum(torch.abs(encoded_word - detected_word)).item()
+                    print(f'{"*" * 35}\nCurrent word: {rep*transmitted_words.shape[0] + count, ser, errors_num}')
+                    total_ser += ser
+                    ser_by_word[rep*transmitted_words.shape[0] + count] = ser
+                else:
+                    print(f'{"*" * 35}\nCurrent word: {rep*transmitted_words.shape[0] + count}, Pilot')
+                    # encode word again
+                    decoded_word_array = transmitted_word.int().cpu().numpy()
+                    encoded_word = torch.Tensor(encode(decoded_word_array, self.n_symbols).reshape(1, -1)).to(device)
+                    ser = 0
+                    errors_num = 0
+                # save the encoded word in the buffer
+                if ser <= self.ser_thresh:
+                    buffer_rx = torch.cat([buffer_rx, received_word])
+                    buffer_tx = torch.cat([buffer_tx,
+                                           detected_word.reshape(1, -1) if ser > 0 else
+                                           encoded_word.reshape(1, -1)],dim=0)
+                    buffer_ser = torch.cat([buffer_ser, torch.FloatTensor([ser]).to(device)])
 
-        for count, (transmitted_word, received_word) in enumerate(zip(transmitted_words, received_words)):
-            transmitted_word, received_word = transmitted_word.reshape(1, -1), received_word.reshape(1, -1)
-            # detect
-            # self.detector.model.eval()
-            detected_word = self.detector(received_word, 'val')
-            if count in self.data_indices:
-                # decode
-                decoded_word = [decode(detected_word, self.n_symbols) for detected_word in detected_word.cpu().numpy()]
-                decoded_word = torch.Tensor(np.array(decoded_word)).to(device)
-                # calculate accuracy
-                ser, fer, err_indices = self.calculate_error_rates(decoded_word, transmitted_word)
-                # encode word again
-                decoded_word_array = decoded_word.int().cpu().numpy()
-                encoded_word = torch.Tensor(encode(decoded_word_array, self.n_symbols).reshape(1, -1)).to(device)
-                errors_num = torch.sum(torch.abs(encoded_word - detected_word)).item()
-                print(f'{"*" * 35}\nCurrent word: {count, ser, errors_num}')
-                total_ser += ser
-                ser_by_word[count] = ser
-            else:
-                print(f'{"*" * 35}\nCurrent word: {count}, Pilot')
-                # encode word again
-                decoded_word_array = transmitted_word.int().cpu().numpy()
-                encoded_word = torch.Tensor(encode(decoded_word_array, self.n_symbols).reshape(1, -1)).to(device)
-                ser = 0
-                errors_num = 0
-            # save the encoded word in the buffer
-            if ser <= self.ser_thresh:
-                buffer_rx = torch.cat([buffer_rx, received_word])
-                buffer_tx = torch.cat([buffer_tx,
-                                       detected_word.reshape(1, -1) if ser > 0 else
-                                       encoded_word.reshape(1, -1)],dim=0)
-                buffer_ser = torch.cat([buffer_ser, torch.FloatTensor([ser]).to(device)])
+                if self.self_supervised and ser <= self.ser_thresh:
+                    # use last word inserted in the buffer for training
+                    self.online_training(buffer_tx[-1].reshape(1, -1), buffer_rx[-1].reshape(1, -1))
 
-            if self.self_supervised and ser <= self.ser_thresh:
-                # use last word inserted in the buffer for training
-                self.online_training(buffer_tx[-1].reshape(1, -1), buffer_rx[-1].reshape(1, -1))
+                if (count + 1) % 10 == 0:
+                    print(f'Self-supervised: {rep*transmitted_words.shape[0] + count + 1}/{transmitted_words.shape[0] * num_of_rep}, Average SER {total_ser / (rep*transmitted_words.shape[0] + count + 1)}')
 
-            if (count + 1) % 10 == 0:
-                print(f'Self-supervised: {count + 1}/{transmitted_words.shape[0]}, Average SER {total_ser / (count + 1)}')
-
-        total_ser /= transmitted_words.shape[0]
+        total_ser /= (transmitted_words.shape[0] * num_of_rep)
         print(f'Final SER: {total_ser}')
         return ser_by_word
 
